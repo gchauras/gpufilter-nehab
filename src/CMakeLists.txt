@@ -1,9 +1,9 @@
 
 include_directories(${CUDA_INCLUDE_DIRS} ${CUDA_SDK_ROOT_DIR}/common/inc)
-link_directories(${CUDA_SDK_ROOT_DIR}/lib)
+link_directories(${CUDA_TOOLKIT_ROOT_DIR}/lib)
 
 cuda_compile(CUDA_SOURCES gpufilter.cu gpudefs.cu)
-add_library(gpufilter timer.cpp defs.cpp ${CUDA_SOURCES})
+cuda_add_library(gpufilter timer.cpp defs.cpp ${CUDA_SOURCES})
 
 add_executable(ex1 example_sat1.cc)
 target_link_libraries(ex1 gpufilter)
@@ -35,7 +35,7 @@ target_link_libraries(exB gpufilter)
 cuda_add_executable(exG example_gauss.cc)
 target_link_libraries(exG gpufilter)
 
-# include_directories(${OPENCV_DIR})
+include_directories(${OpenCV_DIR})
 
-# cuda_add_executable(recursive app_recursive.cc)
-# target_link_libraries(recursive cv highgui gpufilter)
+cuda_add_executable(recursive app_recursive.cc)
+target_link_libraries(recursive ${OpenCV_LIBS} gpufilter)
