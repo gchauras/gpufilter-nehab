@@ -5,12 +5,7 @@ find_package(CUDA REQUIRED)
 
 find_package(OpenCV REQUIRED)
 
-set(CUDA_NVCC_FLAGS
-  ${CUDA_NVCC_FLAGS}
-  -gencode arch=compute_20,code=sm_21
-  --ptxas-options=-v
-  -ftz=true -prec-div=false -prec-sqrt=false
-)
+set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -gencode arch=compute_30,code=sm_35 -ftz=true -prec-div=false -prec-sqrt=false)
 
 # Set this variable to true if you want to watch compilation
 set(CMAKE_VERBOSE_MAKEFILE FALSE)

@@ -35,6 +35,9 @@ target_link_libraries(exB gpufilter)
 cuda_add_executable(exG example_gauss.cc)
 target_link_libraries(exG gpufilter)
 
+cuda_add_executable(summed_table summed_table.cc)
+target_link_libraries(summed_table gpufilter)
+
 include_directories(${OpenCV_DIR})
 
 cuda_add_executable(recursive app_recursive.cc)
