@@ -15,6 +15,7 @@
 
 #include <defs.h>
 #include <extension.h>
+#include <gpufilter.h>
 
 //== NAMESPACES ===============================================================
 
@@ -497,8 +498,8 @@ void gaussian_cpu( T *in,
                    const int& extb = 1,
                    const initcond& ic = clamp ) {
     T b10, a11, b20, a21, a22;
-    weights1(s, b10, a11);
-    weights2(s, b20, a21, a22);
+    weights1<float>(s, b10, a11);
+    weights2<float>(s, b20, a21, a22);
     r(in, w, h, b10, a11, false, extb, ic);
     r(in, w, h, b20, a21, a22, false, extb, ic);
 }
