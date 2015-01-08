@@ -318,6 +318,42 @@ void algSAT_stage4( float *g_out,
 
 }
 
+__global__ __launch_bounds__( WS * WS/4, MBO )
+void algSAT_box( float *g_out,
+                 float *g_sat,
+                 float *g_in,
+                 const int box_filter_radius)
+{
+	const int tx = threadIdx.x, ty = threadIdx.y, bx = blockIdx.x, by = blockIdx.y;
+
+#pragma unroll
+    for (int y=0; y<4; y++) {
+        int col = bx*WS+tx;
+        int row = by*WS+(4*ty+y);
+
+        int z = box_filter_radius;
+        int w = c_width-1;
+        int h = c_height-1;
+
+        int row_a = max(0,row-z-1), col_a = max(0,col-z-1);
+        int row_b = min(h,row+z),   col_b = max(0,col-z-1);
+        int row_c = max(0,row-z-1), col_c = min(w,col+z);
+        int row_d = min(h,row+z),   col_d = min(w,col+z);
+
+        float u = g_in [   row*c_width+col   ];
+        float a = g_sat[ row_a*c_width+col_a ];
+        float b = g_sat[ row_b*c_width+col_b ];
+        float c = g_sat[ row_c*c_width+col_c ];
+        float d = g_sat[ row_d*c_width+col_d ];
+
+        if (row<z+1 || row>c_height-z-1 || col<z+1 || col>c_width-z-1) {
+            g_out[row*c_width+col] = u;
+        } else {
+            g_out[row*c_width+col] = (a+d-c-b) / ((2*z+1)*(2*z+1));
+        }
+    }
+}
+
 //-- Host ---------------------------------------------------------------------
 
 __host__
@@ -408,6 +444,32 @@ void algSAT( float *h_inout,
 
 }
 
+__host__
+void algBox( const int& box_filter_radius,
+             dvector<float>& d_tmp,
+             dvector<float>& d_box,
+             dvector<float>& d_ybar,
+             dvector<float>& d_vhat,
+             dvector<float>& d_ysum,
+             dvector<float>& d_in,
+             const alg_setup& algs ) {
+
+	const int nWm = (algs.width+MTS-1)/MTS, nHm = (algs.height+MTS-1)/MTS;
+    const dim3 cg_img( algs.m_size, algs.n_size );
+    const dim3 cg_ybar( nWm, 1 );
+    const dim3 cg_vhat( 1, nHm );
+
+    algSAT_stage1<<< cg_img, dim3(WS, SOW) >>>( d_in, d_ybar, d_vhat );
+
+    algSAT_stage2<<< cg_ybar, dim3(WS, MW) >>>( d_ybar, d_ysum );
+
+    algSAT_stage3<<< cg_vhat, dim3(WS, MW) >>>( d_ysum, d_vhat );
+
+    algSAT_stage4<<< cg_img, dim3(WS, SOW) >>>( d_tmp, d_in, d_ybar, d_vhat );
+
+    algSAT_box   <<< cg_img, dim3(WS, WS/4) >>>( d_box, d_tmp, d_in, box_filter_radius);
+
+}
 //=============================================================================
 } // namespace gpufilter
 //=============================================================================

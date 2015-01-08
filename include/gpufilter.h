@@ -241,7 +241,7 @@ void weights2( const T1& s,
                T2& a2 ) {
     const std::complex<T1> d1((T1)1.41650, (T1)1.00829);
     std::complex<T1> d = ds(d1, s);
-    T1 n2 = std::abs(d); 
+    T1 n2 = std::abs(d);
     n2 *= n2;
     T1 re = std::real(d);
     b0 = static_cast<T2>(((T1)1-(T1)2*re+n2)/n2);
@@ -377,6 +377,20 @@ void algSAT( float *inout,
  *
  *  @see gpufilter.h
  */
+
+/** Use algSAT to compute repeated box filters
+ *
+ */
+__host__
+void algBox( const int& box_filter_radius,
+             dvector<float>& d_out,
+             dvector<float>& d_box,
+             dvector<float>& d_ybar,
+             dvector<float>& d_vhat,
+             dvector<float>& d_ysum,
+             dvector<float>& d_in,
+             const alg_setup& algs );
+
 
 //-- Alg4 ---------------------------------------------------------------------
 
@@ -826,7 +840,7 @@ $ ../bin/recursive -unit:gpu -filter:gaussian -sigma:4 ../images/cactus-512.png 
 
 Throughout the code and documentation, the following naming conventions
 were used to avoid confusion in variable names and their corresponding locations:
- 
+
 \li c_ :: constant
 \li t_ :: texture
 \li g_ :: global memory

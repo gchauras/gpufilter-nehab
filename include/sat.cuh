@@ -123,6 +123,17 @@ void algSAT_stage4( float *g_out,
                     const float *g_y,
                     const float *g_v );
 
+
+/**
+ * Compute box filter of a given radius from summed area table available
+ * in g_in
+ */
+__global__
+void algSAT_box( float *g_out,
+                 float *g_sat,
+                 float *g_in,
+                 const int box_filter_radius);
+
 //=============================================================================
 } // namespace gpufilter
 //=============================================================================
