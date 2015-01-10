@@ -1,6 +1,6 @@
 /**
- *  @file summed_table.cc
- *  @brief Summed-Area Table, simply runs example_sat3.cc with different image widths
+ *  @file bspline_filter.cc
+ *  @brief Bicubic B-Spline interpolation, simply runs example_bspline.cc for varying image widths
  *  @author Gaurav Chaurasia
  *  @date January, 2015
  */
@@ -23,8 +23,10 @@
 
 #define REPEATS 100
 
+
 // Main
 int main(int argc, char *argv[]) {
+    int box_filter_radius = 5;
     int min_w = 0;
     int max_w = 0;
     int inc_w = 32;
@@ -43,37 +45,43 @@ int main(int argc, char *argv[]) {
             max_w = 4096;
         }
     } else {
-        std::cerr << "Usage: ./summed_table [image width] "
-                  << "use 0 to run all image widths" << std::endl;
+        std::cerr << "Usage: ./bspline_filter [image width], "
+            << "use 0 to run all image widths" << std::endl;
         return -1;
     }
 
+    const gpufilter::initcond ic = gpufilter::mirror;
+    const int extb = 1;
 
     for (int in_w=min_w; in_w<=max_w; in_w+=inc_w) {
         float *in_gpu = new float[in_w*in_w];
 
-        srand(time(0));
-
         for (int i = 0; i < in_w*in_w; ++i)
-            in_gpu[i] = rand() % 256;
+            in_gpu[i] = rand()/float(RAND_MAX);
 
         gpufilter::alg_setup algs;
-        gpufilter::dvector<float> d_in_gpu, d_ybar, d_vhat, d_ysum;
-        gpufilter::prepare_algSAT( algs, d_in_gpu, d_ybar, d_vhat, d_ysum, in_gpu, in_w, in_w );
-        gpufilter::dvector<float> d_out_gpu( algs.width, algs.height );
+        gpufilter::dvector<float> d_out;
+        gpufilter::dvector<float> d_transp_pybar, d_transp_ezhat, d_ptucheck, d_etvtilde;
+        cudaArray *a_in;
+
+        int w = in_w;
+        int h = in_w;
+        float b0 = 2.0f-std::sqrt(3.0f)+1.0f;
+        float a1 = -2.0f+std::sqrt(3.0f);
+        gpufilter::prepare_alg5( algs, d_out, d_transp_pybar, d_transp_ezhat, d_ptucheck, d_etvtilde, a_in, in_gpu, w, h, b0, a1, extb, ic );
 
         gpufilter::cpu_timer tm(in_w*in_w*REPEATS, "iP", true);
         for (int i=0; i<REPEATS; i++) {
-            gpufilter::algSAT( d_out_gpu, d_ybar, d_vhat, d_ysum, d_in_gpu, algs );
+            gpufilter::alg5( d_out, d_transp_pybar, d_transp_ezhat, d_ptucheck, d_etvtilde, a_in, algs );
         }
         cudaThreadSynchronize();
         tm.stop();
+        d_out.copy_to( in_gpu, w * h );
+        cudaFreeArray( a_in );
 
         float millisec = tm.elapsed()*1000.0f;
 
-        std::cerr << "Width " << in_w << " " << millisec/(REPEATS) << std::endl;
-
-        d_out_gpu.copy_to( in_gpu, algs.width, algs.height, in_w, in_w );
+        std::cerr << "Width " << in_w << "\t" << millisec/(REPEATS) << " ms" << std::endl;
 
         delete [] in_gpu;
     }

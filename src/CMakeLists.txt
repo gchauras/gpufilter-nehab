@@ -41,6 +41,12 @@ target_link_libraries(summed_table gpufilter)
 cuda_add_executable(box_filter box_filter.cc)
 target_link_libraries(box_filter gpufilter)
 
+cuda_add_executable(bspline_filter bspline_filter.cc)
+target_link_libraries(bspline_filter gpufilter)
+
+cuda_add_executable(gaussian_filter gaussian_filter.cc)
+target_link_libraries(gaussian_filter gpufilter)
+
 include_directories(${OpenCV_DIR})
 
 cuda_add_executable(recursive app_recursive.cc)

@@ -1,8 +1,8 @@
 /**
- *  @file iter_box_filter.cc
- *  @brief Iterated box filtering using summed area tables
- *  @author Andre Maximo
- *  @date November, 2011
+ *  @file box_filter.cc
+ *  @brief Iterated box filtering using summed area tables for varying image widths
+ *  @author Gaurav Chaurasia
+ *  @date January, 2015
  */
 
 #include <ctime>
@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
         }
 
     } else {
-        std::cerr << "Usage: ./iter_box_filter [image width] [filter iterations], "
+        std::cerr << "Usage: ./box_filter [image width] [filter iterations], "
             << "use 0 to run all image widths" << std::endl;
         return -1;
     }
@@ -79,8 +79,8 @@ int main(int argc, char *argv[]) {
                 }
                 gpufilter::algBox(box_filter_radius, d_tmp_gpu, d_box, d_ybar, d_vhat, d_ysum, d_in_gpu, algs );
             }
-            cudaThreadSynchronize();
         }
+        cudaThreadSynchronize();
         tm.stop();
 
         float millisec = tm.elapsed()*1000.0f;

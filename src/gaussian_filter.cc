@@ -1,6 +1,6 @@
 /**
- *  @file summed_table.cc
- *  @brief Summed-Area Table, simply runs example_sat3.cc with different image widths
+ *  @file bspline_filter.cc
+ *  @brief Bicubic B-Spline interpolation, simply runs example_bspline.cc for varying image widths
  *  @author Gaurav Chaurasia
  *  @date January, 2015
  */
@@ -23,11 +23,13 @@
 
 #define REPEATS 100
 
+
 // Main
 int main(int argc, char *argv[]) {
     int min_w = 0;
     int max_w = 0;
     int inc_w = 32;
+    float sigma = 16.f;
 
     if (argc == 2) {
         int w = atoi(argv[1]);
@@ -43,37 +45,28 @@ int main(int argc, char *argv[]) {
             max_w = 4096;
         }
     } else {
-        std::cerr << "Usage: ./summed_table [image width] "
-                  << "use 0 to run all image widths" << std::endl;
+        std::cerr << "Usage: ./gaussian_filter [image width], "
+            << "use 0 to run all image widths" << std::endl;
         return -1;
     }
-
 
     for (int in_w=min_w; in_w<=max_w; in_w+=inc_w) {
         float *in_gpu = new float[in_w*in_w];
 
-        srand(time(0));
-
         for (int i = 0; i < in_w*in_w; ++i)
-            in_gpu[i] = rand() % 256;
+            in_gpu[i] = rand()/float(RAND_MAX);
 
-        gpufilter::alg_setup algs;
-        gpufilter::dvector<float> d_in_gpu, d_ybar, d_vhat, d_ysum;
-        gpufilter::prepare_algSAT( algs, d_in_gpu, d_ybar, d_vhat, d_ysum, in_gpu, in_w, in_w );
-        gpufilter::dvector<float> d_out_gpu( algs.width, algs.height );
 
-        gpufilter::cpu_timer tm(in_w*in_w*REPEATS, "iP", true);
-        for (int i=0; i<REPEATS; i++) {
-            gpufilter::algSAT( d_out_gpu, d_ybar, d_vhat, d_ysum, d_in_gpu, algs );
+        float millisec = 0.0f;
+        {
+            gpufilter::scoped_timer_stop sts( gpufilter::timers.gpu_add("GPU") );
+            for (int i=0; i<REPEATS; i++) {
+                gpufilter::gaussian_gpu( in_gpu, in_w, in_w, sigma );
+            }
+            millisec = sts.elapsed()*1000.0f;
         }
-        cudaThreadSynchronize();
-        tm.stop();
 
-        float millisec = tm.elapsed()*1000.0f;
-
-        std::cerr << "Width " << in_w << " " << millisec/(REPEATS) << std::endl;
-
-        d_out_gpu.copy_to( in_gpu, algs.width, algs.height, in_w, in_w );
+        std::cerr << "Width " << in_w << "\t" << millisec/(REPEATS) << " ms" << std::endl;
 
         delete [] in_gpu;
     }
