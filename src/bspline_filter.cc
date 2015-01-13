@@ -82,7 +82,7 @@ int main(int argc, char *argv[]) {
         cudaFreeArray( a_in );
 
         float millisec = tm.elapsed()*1000.0f;
-        float throughput = (in_w*in_w*REPEATS*1000.0f)/(millisec*1024*1024*1024);
+        float throughput = (in_w*in_w*REPEATS*1000.0f)/(millisec*1024*1024);
         // std::cerr << in_w << "\t" << millisec/(REPEATS) << " ms" << std::endl;
         std::cerr << in_w << "\t" << throughput << std::endl;
 
