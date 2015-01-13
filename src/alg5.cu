@@ -74,7 +74,7 @@ void alg5_stage1( float *g_transp_pybar,
     // We use a transposed matrix for pybar and ezhat to have
     // coalesced memory accesses. This is the index for these
     // transposed buffers.
-    g_transp_pybar += m*c_carry_height + n*WS + tx; 
+    g_transp_pybar += m*c_carry_height + n*WS + tx;
     g_transp_ezhat += m*c_carry_height + n*WS + tx;
     g_ptucheck += n*c_carry_width + m*WS + tx;
     g_etvtilde += n*c_carry_width + m*WS + tx;
@@ -317,7 +317,7 @@ void alg5_stage2_3( float *g_transp_pybar,
         if (m-ty > 0)
         {
             *bdata = *transp_ezhat;
-        
+
             if (m-ty > 0)
                 *bdata += *transp_pm1y*c_HARB_AFP;
         }
@@ -358,7 +358,7 @@ void alg5_stage4_5( float *g_ptucheck,
     // P(ucheck) -> P(u) processing --------------------------------------
 
 	volatile __shared__ float s_block_RD_raw[CHW][WS/2+WS+1];
-	volatile float (*block_RD)[WS/2+WS+1] = 
+	volatile float (*block_RD)[WS/2+WS+1] =
             (float (*)[WS/2+WS+1]) &s_block_RD_raw[0][WS/2];
 
     if (ty < CHW)
@@ -533,7 +533,7 @@ void alg5_stage4_5( float *g_ptucheck,
 
     {
         *bdata = *etvtilde;
-        
+
         if (m < c_m_size-1)
         {
             CALC_DOT(dot, *transp_em1z, c_HARB_AFB[tx], WS-1);
@@ -675,7 +675,7 @@ void alg5_stage6( float *g_out,
 
     __shared__ float s_block[2*WS][WS+1];
 
-    __shared__ float s_py[2][WS], s_ez[2][WS], 
+    __shared__ float s_py[2][WS], s_ez[2][WS],
         s_ptu[2][WS], s_etv[2][WS];
 
     float (*bdata)[WS+1] = (float (*)[WS+1]) &s_block[ty][tx],
@@ -837,7 +837,7 @@ void alg5_stage6( float *g_out,
                 float *out = g_out + y*c_width + x;
 
 #pragma unroll
-                for (int i=WS-1; i>=0; --i) 
+                for (int i=WS-1; i>=0; --i)
                 {
                     *out = prev = **bdata-- *b0_2 - prev*c_a1;
                     out -= c_width;

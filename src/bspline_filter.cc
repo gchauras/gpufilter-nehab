@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    std::cerr << "Width" << "\t" << "Bicubic_Nehab" << std::endl;
+    std::cerr << "Width\tBicubic_Nehab\tBiquintic_Nehab" << std::endl;
 
     const gpufilter::initcond ic = gpufilter::mirror;
     const int extb = 1;
@@ -61,30 +61,72 @@ int main(int argc, char *argv[]) {
         for (int i = 0; i < in_w*in_w; ++i)
             in_gpu[i] = rand()/float(RAND_MAX);
 
-        gpufilter::alg_setup algs;
-        gpufilter::dvector<float> d_out;
-        gpufilter::dvector<float> d_transp_pybar, d_transp_ezhat, d_ptucheck, d_etvtilde;
-        cudaArray *a_in;
+        float t_bicubic;
+        float t_biquintic;
 
-        int w = in_w;
-        int h = in_w;
-        float b0 = 2.0f-std::sqrt(3.0f)+1.0f;
-        float a1 = -2.0f+std::sqrt(3.0f);
-        gpufilter::prepare_alg5( algs, d_out, d_transp_pybar, d_transp_ezhat, d_ptucheck, d_etvtilde, a_in, in_gpu, w, h, b0, a1, extb, ic );
+        // bicubic
+        {
+            gpufilter::alg_setup algs;
+            gpufilter::dvector<float> d_out;
+            gpufilter::dvector<float> d_transp_pybar, d_transp_ezhat, d_ptucheck, d_etvtilde;
+            cudaArray *a_in;
 
-        gpufilter::cpu_timer tm(in_w*in_w*REPEATS, "iP", true);
-        for (int i=0; i<REPEATS; i++) {
-            gpufilter::alg5( d_out, d_transp_pybar, d_transp_ezhat, d_ptucheck, d_etvtilde, a_in, algs );
+            int w = in_w;
+            int h = in_w;
+            float b0 = 2.0f-std::sqrt(3.0f)+1.0f;
+            float a1 = -2.0f+std::sqrt(3.0f);
+            gpufilter::prepare_alg5( algs, d_out, d_transp_pybar, d_transp_ezhat, d_ptucheck, d_etvtilde, a_in, in_gpu, w, h, b0, a1, extb, ic );
+
+            gpufilter::cpu_timer tm(in_w*in_w*REPEATS, "iP", true);
+            for (int i=0; i<REPEATS; i++) {
+                gpufilter::alg5( d_out, d_transp_pybar, d_transp_ezhat, d_ptucheck, d_etvtilde, a_in, algs );
+            }
+            cudaThreadSynchronize();
+            tm.stop();
+
+            d_out.copy_to( in_gpu, w * h );
+            cudaFreeArray( a_in );
+
+            float millisec = tm.elapsed()*1000.0f;
+            // t_bicubic = millisec/(REPEATS);
+            t_bicubic = (in_w*in_w*REPEATS*1000.0f)/(millisec*1024*1024);
         }
-        cudaThreadSynchronize();
-        tm.stop();
-        d_out.copy_to( in_gpu, w * h );
-        cudaFreeArray( a_in );
 
-        float millisec = tm.elapsed()*1000.0f;
-        float throughput = (in_w*in_w*REPEATS*1000.0f)/(millisec*1024*1024);
-        // std::cerr << in_w << "\t" << millisec/(REPEATS) << " ms" << std::endl;
-        std::cerr << in_w << "\t" << throughput << std::endl;
+        // biquintic
+        {
+            gpufilter::alg_setup algs, algs_transp;
+            gpufilter::dvector<float> d_out, d_transp_out;
+            gpufilter::dvector<float2> d_transp_pybar, d_transp_ezhat, d_pubar, d_evhat;
+            cudaArray *a_in;
+
+            int w = in_w;
+            int h = in_w;
+            float b0 = 2.0f-std::sqrt(3.0f)+1.0f;
+            float a1 = -2.0f+std::sqrt(3.0f);
+            float a2 = 1.0f; // not actually correct, only for performance
+
+            gpufilter::prepare_alg4( algs, algs_transp, d_out, d_transp_out, d_transp_pybar,
+                               d_transp_ezhat, d_pubar, d_evhat, a_in, in_gpu, w, h,
+                               b0, a1, a2, extb, ic );
+
+            gpufilter::cpu_timer tm(in_w*in_w*REPEATS, "iP", true);
+            for (int i=0; i<REPEATS; i++) {
+                gpufilter::alg4( d_out, d_transp_out, d_transp_pybar, d_transp_ezhat, d_pubar,
+                        d_evhat, a_in, algs, algs_transp );
+            }
+            cudaThreadSynchronize();
+            tm.stop();
+
+            d_out.copy_to( in_gpu, w * h );
+
+            cudaFreeArray( a_in );
+
+            float millisec = tm.elapsed()*1000.0f;
+            // t_biquintic = millisec/(REPEATS);
+            t_biquintic = (in_w*in_w*REPEATS*1000.0f)/(millisec*1024*1024);
+        }
+
+        std::cerr << in_w << "\t" << t_bicubic << "\t" << t_biquintic << std::endl;
 
         delete [] in_gpu;
     }

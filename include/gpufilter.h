@@ -693,6 +693,14 @@ void gaussian_gpu( float *inout,
                    const float& s,
                    const int& extb = 1,
                    const initcond& ic = clamp );
+extern
+void gaussian_gpu( float *inout,
+                   const int& w,
+                   const int& h,
+                   const float& s,
+                   float& runtime,
+                   const int& extb = 1,
+                   const initcond& ic = clamp );
 
 //-- BSpline ------------------------------------------------------------------
 

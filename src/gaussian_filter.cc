@@ -1,6 +1,6 @@
 /**
- *  @file bspline_filter.cc
- *  @brief Bicubic B-Spline interpolation, simply runs example_bspline.cc for varying image widths
+ *  @file gaussian_filter.cc
+ *  @brief Gaussian filter, simply runs example_gauss.cc for varying image widths
  *  @author Gaurav Chaurasia
  *  @date January, 2015
  */
@@ -59,17 +59,14 @@ int main(int argc, char *argv[]) {
             in_gpu[i] = rand()/float(RAND_MAX);
 
 
-        float millisec = 0.0f;
-        {
-            gpufilter::scoped_timer_stop sts( gpufilter::timers.gpu_add("GPU") );
-            for (int i=0; i<REPEATS; i++) {
-                gpufilter::gaussian_gpu( in_gpu, in_w, in_w, sigma );
-            }
-            millisec = sts.elapsed()*1000.0f;
+        float runtime = 0.0f;
+        for (int i=0; i<REPEATS; i++) {
+            gpufilter::gaussian_gpu( in_gpu, in_w, in_w, sigma, runtime );
         }
 
+        float millisec = runtime*1000.0f;
         float throughput = (in_w*in_w*REPEATS*1000.0f)/(millisec*1024*1024);
-        // std::cerr << in_w << "\t" << millisec/(REPEATS) << " ms" << std::endl;
+        std::cerr << in_w << "\t" << millisec/(REPEATS) << " ms" << std::endl;
         std::cerr << in_w << "\t" << throughput << std::endl;
 
         delete [] in_gpu;

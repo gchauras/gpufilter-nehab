@@ -30,7 +30,7 @@ namespace gpufilter {
 
 //-- Utilities ----------------------------------------------------------------
 
-template <class T> 
+template <class T>
 __device__ inline void swap(T& a, T& b) {
     T c = a;
     a = b;
@@ -120,7 +120,7 @@ void alg4_stage1( float2 *g_transp_pybar,
     // We use a transposed matrix for pybar and ezhat to have
     // coalesced memory accesses. This is the index for these
     // transposed buffers.
-    g_transp_pybar += m*c_carry_height + n*WS + tx; 
+    g_transp_pybar += m*c_carry_height + n*WS + tx;
     g_transp_ezhat += m*c_carry_height + n*WS + tx;
 
     __syncthreads();
@@ -200,7 +200,7 @@ void alg4_stage2_3v5_6( float2 *g_transp_pybar,
         for (int m=1; m<blockDim.y; ++m, ++bdata)
             **bdata = py = **bdata + mul2x2(py,c_AbF2);
     }
-    
+
 
     __syncthreads();
 
@@ -344,7 +344,7 @@ void alg4_stage2_3v5_6( float2 *g_transp_pybar,
         if (m-ty >= 0)
         {
             *bdata = *transp_ezhat;
-        
+
             if (m-ty > 0)
                 *bdata += mul2x2(*transp_pm1y,c_AFP_HARB);
         }
@@ -417,7 +417,7 @@ void alg4_stage4v7( float *g_transp_out,
     // We use a transposed matrix for py and ez to have coalesced
     // memory accesses. This is the index for these transposed
     // buffers.
-    g_transp_py += (m-1)*c_carry_height + n*WS + tx; 
+    g_transp_py += (m-1)*c_carry_height + n*WS + tx;
     g_transp_ez += (m+1)*c_carry_height + n*WS + tx;
 
     __syncthreads();
@@ -529,7 +529,7 @@ void alg4_stage4v7( float *g_transp_out,
 
         if (p_fusion)
         {
-            g_pubar += n*c_carry_width + m*WS + tx; 
+            g_pubar += n*c_carry_width + m*WS + tx;
             g_evhat += n*c_carry_width + m*WS + tx;
 
             float (*bdata)[WS+1] = (float (*)[WS+1]) &s_block[ty*WS][tx];
