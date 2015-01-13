@@ -48,6 +48,7 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
+    std::cerr << "Width" << "\t" << "Summed_table_Nehab" << std::endl;
 
     for (int in_w=min_w; in_w<=max_w; in_w+=inc_w) {
         float *in_gpu = new float[in_w*in_w];
@@ -71,7 +72,8 @@ int main(int argc, char *argv[]) {
 
         float millisec = tm.elapsed()*1000.0f;
 
-        std::cerr << "Width " << in_w << " " << millisec/(REPEATS) << std::endl;
+        // std::cerr << "Width " << in_w << "\t" << millisec/(REPEATS) << " ms" << std::endl;
+        std::cerr << in_w << "\t" << (in_w*in_w*REPEATS)/(millisec*float(2^30)*1000.0f) << std::endl;
 
         d_out_gpu.copy_to( in_gpu, algs.width, algs.height, in_w, in_w );
 

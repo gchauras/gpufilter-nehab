@@ -50,6 +50,8 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
+    std::cerr << "Width" << "\t" << "Bicubic_Nehab" << std::endl;
+
     const gpufilter::initcond ic = gpufilter::mirror;
     const int extb = 1;
 
@@ -81,7 +83,8 @@ int main(int argc, char *argv[]) {
 
         float millisec = tm.elapsed()*1000.0f;
 
-        std::cerr << "Width " << in_w << "\t" << millisec/(REPEATS) << " ms" << std::endl;
+        // std::cerr << "Width " << in_w << "\t" << millisec/(REPEATS) << " ms" << std::endl;
+        std::cerr << in_w << "\t" << (in_w*in_w*REPEATS)/(millisec*float(2^30)*1000.0f) << std::endl;
 
         delete [] in_gpu;
     }
