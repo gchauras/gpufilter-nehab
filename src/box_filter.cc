@@ -26,11 +26,11 @@
 
 // Main
 int main(int argc, char *argv[]) {
-    int box_filter_radius = 5;
+    int box_filter_radius = 10;
     int num_iterations = 0;
     int min_w = 0;
     int max_w = 0;
-    int inc_w = 32;
+    int inc_w = 64;
 
     if (argc == 3) {
         int w = atoi(argv[1]);
@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
             min_w = w;      // run for this width only
             max_w = w;
         } else {
-            min_w = 64;     // run for all widths
+            min_w = inc_w;  // run for all widths
             max_w = 4096;
         }
 
@@ -56,8 +56,6 @@ int main(int argc, char *argv[]) {
             << "use 0 to run all image widths" << std::endl;
         return -1;
     }
-
-    std::cerr << "Width" << "\t" << "Box_" << num_iterations << "_Nehab" << std::endl;
 
     for (int in_w=min_w; in_w<=max_w; in_w+=inc_w) {
         float *in_gpu = new float[in_w*in_w];
@@ -86,8 +84,7 @@ int main(int argc, char *argv[]) {
 
         float millisec = tm.elapsed()*1000.0f;
         float throughput = (in_w*in_w*REPEATS*1000.0f)/(millisec*1024*1024);
-        // std::cerr << in_w << "\t" << millisec/(REPEATS) << " ms" << std::endl;
-        std::cerr << in_w << "\t" << throughput << std::endl;
+        std::cerr << in_w << "\t" << millisec/(REPEATS) << "\t" << throughput << std::endl;
 
 
         d_box.copy_to( out_gpu, algs.width, algs.height, in_w, in_w );

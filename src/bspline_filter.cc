@@ -29,10 +29,12 @@ int main(int argc, char *argv[]) {
     int box_filter_radius = 5;
     int min_w = 0;
     int max_w = 0;
-    int inc_w = 32;
+    int inc_w = 64;
+    int algo  = 0;
 
-    if (argc == 2) {
+    if (argc == 3) {
         int w = atoi(argv[1]);
+        algo  = atoi(argv[2]);
         if (w%inc_w) {
             std::cerr << "Image width must be a multiple of " << inc_w << std::endl;
             return -1;
@@ -41,16 +43,15 @@ int main(int argc, char *argv[]) {
             min_w = w;      // run for this width only
             max_w = w;
         } else {
-            min_w = 64;     // run for all widths
+            min_w = inc_w;  // run for all widths
             max_w = 4096;
         }
     } else {
-        std::cerr << "Usage: ./bspline_filter [image width], "
-            << "use 0 to run all image widths" << std::endl;
+        std::cerr << "Usage: ./bspline_filter [image width] [0|1], "
+            << "use 0 to run all image widths in first arg, use 0 "
+            << "for bicubic and 1 for biquintic" << std::endl;
         return -1;
     }
-
-    std::cerr << "Width\tBicubic_Nehab\tBiquintic_Nehab" << std::endl;
 
     const gpufilter::initcond ic = gpufilter::mirror;
     const int extb = 1;
@@ -65,7 +66,7 @@ int main(int argc, char *argv[]) {
         float t_biquintic;
 
         // bicubic
-        {
+        if (algo==0) {
             gpufilter::alg_setup algs;
             gpufilter::dvector<float> d_out;
             gpufilter::dvector<float> d_transp_pybar, d_transp_ezhat, d_ptucheck, d_etvtilde;
@@ -88,12 +89,11 @@ int main(int argc, char *argv[]) {
             cudaFreeArray( a_in );
 
             float millisec = tm.elapsed()*1000.0f;
-            // t_bicubic = millisec/(REPEATS);
-            t_bicubic = (in_w*in_w*REPEATS*1000.0f)/(millisec*1024*1024);
+            float throughput = (in_w*in_w*REPEATS*1000.0f)/(millisec*1024*1024);
+            std::cerr << in_w << "\t" << millisec/(REPEATS) << "\t" << throughput << std::endl;
         }
-
         // biquintic
-        {
+        else {
             gpufilter::alg_setup algs, algs_transp;
             gpufilter::dvector<float> d_out, d_transp_out;
             gpufilter::dvector<float2> d_transp_pybar, d_transp_ezhat, d_pubar, d_evhat;
@@ -122,11 +122,10 @@ int main(int argc, char *argv[]) {
             cudaFreeArray( a_in );
 
             float millisec = tm.elapsed()*1000.0f;
-            // t_biquintic = millisec/(REPEATS);
-            t_biquintic = (in_w*in_w*REPEATS*1000.0f)/(millisec*1024*1024);
+            float throughput = (in_w*in_w*REPEATS*1000.0f)/(millisec*1024*1024);
+            std::cerr << in_w << "\t" << millisec/(REPEATS) << "\t" << throughput << std::endl;
         }
 
-        std::cerr << in_w << "\t" << t_bicubic << "\t" << t_biquintic << std::endl;
 
         delete [] in_gpu;
     }

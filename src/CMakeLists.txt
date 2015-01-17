@@ -49,5 +49,6 @@ target_link_libraries(gaussian_filter gpufilter)
 
 include_directories(${OpenCV_DIR})
 
+
 cuda_add_executable(recursive app_recursive.cc)
 target_link_libraries(recursive ${OpenCV_LIBS} gpufilter)
