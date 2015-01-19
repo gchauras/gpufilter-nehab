@@ -7,3 +7,4 @@ bin/summed_table 0 2>summed_table.nehab.perflog
 bin/bspline_filter 0 0 2>bicubic_filter.nehab.perflog
 bin/bspline_filter 1 0 2>biquintic_filter.nehab.perflog
 bin/gaussian_filter 0 2> gaussian_filter.nehab.perflog
+bin/diff_gauss 0 2> diff_gauss.nehab.perflog

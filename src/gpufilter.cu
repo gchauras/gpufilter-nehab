@@ -143,6 +143,104 @@ void bspline3i_gpu( float *inout,
     alg5( inout, w, h, 1.f+alpha, alpha, extb, ic );
 }
 
+__global__ __launch_bounds__( WS * WS/4, MBO )
+void diff(float *gauss1, float *gauss2, float* out)
+{
+	const int tx = threadIdx.x, ty = threadIdx.y, bx = blockIdx.x, by = blockIdx.y;
+
+#pragma unroll
+    for (int y=0; y<4; y++) {
+        int col = bx*WS+tx;
+        int row = by*WS+(4*ty+y);
+        int pixel = row*c_width+col;
+        out[pixel] = gauss1[pixel]-gauss2[pixel];
+    }
+}
+
+
+__host__
+void algDiffGauss(
+        const int& width,
+        float* in_data,
+        float* result,
+        float& runtime)
+{
+    dvector<float> data (width, width);
+    dvector<float> box1 (width, width);
+    dvector<float> box2 (width, width);
+
+    const int box_radius1 = 10;
+    const int box_radius2 = 6;
+
+    cpu_timer tm(0, "iP", false);
+
+    // box filter 1
+    {
+        // upload buffer to GPU
+        int num_iterations = 3;
+        alg_setup algs;
+        dvector<float> d_in, d_ybar, d_vhat, d_ysum;
+        prepare_algSAT( algs, d_in, d_ybar, d_vhat, d_ysum, in_data, width, width );
+        dvector<float> d_tmp_gpu( algs.width, algs.height );
+
+        // start timer and compute 3 box filters
+        tm.start();
+        for (int j=0; j<num_iterations; j++) {
+            if (j>0) {
+                cudaMemcpy(d_in, box1, algs.width*algs.height*sizeof(float),
+                        cudaMemcpyDeviceToDevice);
+            }
+            gpufilter::algBox(box_radius1, d_tmp_gpu, box1, d_ybar, d_vhat, d_ysum, d_in, algs );
+        }
+        cudaThreadSynchronize();
+        tm.stop();
+        runtime += tm.elapsed();
+
+        // dont copy back to host, use it directly to compute the difference of Gaussians
+        // box1.copy_to( result, algs.width, algs.height, width, width );
+    }
+
+    // box filter 2
+    {
+        // upload buffer to GPU
+        int num_iterations = 3;
+        alg_setup algs;
+        dvector<float> d_in, d_ybar, d_vhat, d_ysum;
+        prepare_algSAT( algs, d_in, d_ybar, d_vhat, d_ysum, in_data, width, width );
+        dvector<float> d_tmp_gpu( algs.width, algs.height );
+
+        // start timer and compute 3 box filters
+        tm.start();
+        for (int j=0; j<num_iterations; j++) {
+            if (j>0) {
+                cudaMemcpy(d_in, box2, algs.width*algs.height*sizeof(float),
+                        cudaMemcpyDeviceToDevice);
+            }
+            gpufilter::algBox(box_radius2, d_tmp_gpu, box2, d_ybar, d_vhat, d_ysum, d_in, algs );
+        }
+        cudaThreadSynchronize();
+        tm.stop();
+        runtime += tm.elapsed();
+
+        // dont copy back to host, use it directly to compute the difference of Gaussians
+        // box2.copy_to( result, algs.width, algs.height, width, width );
+    }
+
+    // compute difference between result of box filters
+    {
+        dvector<float> res(width, width);
+
+        tm.start();
+        dim3 blocks(width/WS, width/WS);
+        diff <<< blocks, dim3(WS, WS/4) >>>( box1, box2, res );
+        cudaThreadSynchronize();
+        tm.stop();
+        runtime += tm.elapsed();
+
+        res.copy_to( result, width, width, width, width );
+    }
+}
+
 //=============================================================================
 } // namespace gpufilter
 //=============================================================================

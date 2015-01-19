@@ -378,9 +378,7 @@ void algSAT( float *inout,
  *  @see gpufilter.h
  */
 
-/** Use algSAT to compute repeated box filters
- *
- */
+/** Use algSAT to compute repeated box filters */
 __host__
 void algBox( const int& box_filter_radius,
              dvector<float>& d_out,
@@ -391,6 +389,13 @@ void algBox( const int& box_filter_radius,
              dvector<float>& d_in,
              const alg_setup& algs );
 
+/** Use algBox to compute difference of Gaussians */
+__host__
+void algDiffGauss(
+        const int& width,
+        float* in_data,
+        float* result,
+        float& runtime);
 
 //-- Alg4 ---------------------------------------------------------------------
 

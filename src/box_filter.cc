@@ -26,7 +26,7 @@
 
 // Main
 int main(int argc, char *argv[]) {
-    int box_filter_radius = 10;
+    int box_filter_radius = 5;
     int num_iterations = 0;
     int min_w = 0;
     int max_w = 0;

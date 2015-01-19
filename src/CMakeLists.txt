@@ -47,6 +47,9 @@ target_link_libraries(bspline_filter gpufilter)
 cuda_add_executable(gaussian_filter gaussian_filter.cc)
 target_link_libraries(gaussian_filter gpufilter)
 
+cuda_add_executable(diff_gauss diff_gauss.cc)
+target_link_libraries(diff_gauss gpufilter)
+
 include_directories(${OpenCV_DIR})
 
 
