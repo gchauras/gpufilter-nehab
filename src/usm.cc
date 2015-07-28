@@ -1,8 +1,8 @@
 /**
- *  @file diff_gauss.cc
- *  @brief Difference of Gaussians computed as 3 iterated box filters
+ *  @file usm.cc
+ *  @brief Unsharp mask using recursive gaussian
  *  @author Gaurav Chaurasia
- *  @date January, 2015
+ *  @date April, 2015
  */
 
 #include <ctime>
@@ -32,15 +32,15 @@ int main(int argc, char *argv[]) {
         int width = in_w;
 
         float *in_data  = new float[width*width];
-        float *out      = new float[width*width];
 
         for (int i=0; i<width*width; i++) {
             in_data[i] = rand()/float(RAND_MAX);
         }
 
         float runtime = 0.0f;
+        float sigma   = 3.0f;
         for (int i=0; i<REPEATS; i++) {
-            gpufilter::algDiffGauss(width, in_data, out, runtime);
+            gpufilter::unsharp_mask(in_data, in_w, in_w, sigma, runtime);
         }
 
         float millisec = runtime*1000.0f;
@@ -48,7 +48,6 @@ int main(int argc, char *argv[]) {
         std::cerr << width << "\t" << millisec/(REPEATS) << "\t" << throughput << std::endl;
 
         delete [] in_data;
-        delete [] out;
     }
 
     return 0;

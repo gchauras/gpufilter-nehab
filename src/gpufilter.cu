@@ -241,6 +241,106 @@ void algDiffGauss(
     }
 }
 
+__global__ __launch_bounds__( WS * WS/4, MBO )
+void usm(float *image, float *blur, float *out)
+{
+	const int tx = threadIdx.x, ty = threadIdx.y, bx = blockIdx.x, by = blockIdx.y;
+
+#pragma unroll
+    for (int y=0; y<4; y++) {
+        int col = bx*WS+tx;
+        int row = by*WS+(4*ty+y);
+        int pixel = row*c_width+col;
+        out[pixel] = 2.0f*image[pixel] - blur[pixel];
+    }
+}
+
+__host__
+void unsharp_mask(float *inout,
+                  const int& w,
+                  const int& h,
+                  const float& s,
+                  float& runtime,
+                  const int& extb,
+                  const initcond& ic )
+{
+    float b10, a11, b20, a21, a22;
+    weights1( s, b10, a11 );
+    weights2( s, b20, a21, a22 );
+
+    float* out    = new float[w*h];
+    float* gauss1 = new float[w*h];
+    float* gauss  = new float[w*h];
+
+    // alg5( inout, w, h, b10, a11, extb, ic );
+    {
+        alg_setup algs;
+        dvector<float> d_out;
+        dvector<float> d_transp_pybar, d_transp_ezhat, d_ptucheck, d_etvtilde;
+        cudaArray *a_in;
+
+        prepare_alg5( algs, d_out, d_transp_pybar, d_transp_ezhat, d_ptucheck,
+                d_etvtilde, a_in, inout, w, h, b10, a11, extb, ic );
+
+        cpu_timer tm(0, "iP", true);
+        alg5( d_out, d_transp_pybar, d_transp_ezhat, d_ptucheck, d_etvtilde,
+                a_in, algs );
+        cudaThreadSynchronize();
+        tm.stop();
+        runtime += tm.elapsed();
+
+        // d_out.copy_to( inout, w * h );
+        d_out.copy_to( gauss1, w * h );
+
+        cudaFreeArray( a_in );
+    }
+
+    // alg4( inout, w, h, b20, a21, a22, extb, ic );
+    {
+        alg_setup algs, algs_transp;
+        dvector<float> d_out, d_transp_out;
+        dvector<float2> d_transp_pybar, d_transp_ezhat, d_pubar, d_evhat;
+        cudaArray *a_in;
+
+        prepare_alg4( algs, algs_transp, d_out, d_transp_out, d_transp_pybar,
+                d_transp_ezhat, d_pubar, d_evhat, a_in, gauss1, w, h,
+                b20, a21, a22, extb, ic );
+
+        cpu_timer tm(0, "iP", true);
+        alg4( d_out, d_transp_out, d_transp_pybar, d_transp_ezhat, d_pubar,
+                d_evhat, a_in, algs, algs_transp );
+        cudaThreadSynchronize();
+        tm.stop();
+        runtime += tm.elapsed();
+
+        d_out.copy_to( gauss, w * h );
+
+        cudaFreeArray( a_in );
+    }
+
+    // unsharp mask kernel
+    {
+        dvector<float> d_out(w, h);
+        dvector<float> image(w, h);
+        dvector<float> blur (w, h);
+        image.copy_from( inout, w, h, w, h );
+        blur .copy_from( gauss, w, h, w, h );
+
+        cpu_timer tm(0, "iP", true);
+        dim3 blocks(w/WS, h/WS);
+        usm <<< blocks, dim3(WS, WS/4) >>>( image, blur, d_out );
+        cudaThreadSynchronize();
+        tm.stop();
+        runtime += tm.elapsed();
+
+        d_out.copy_to( out , w, h, w, h );
+    }
+
+    delete [] out;
+    delete [] gauss;
+    delete [] gauss1;
+}
+
 //=============================================================================
 } // namespace gpufilter
 //=============================================================================

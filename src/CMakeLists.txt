@@ -50,6 +50,9 @@ target_link_libraries(gaussian_filter gpufilter)
 cuda_add_executable(diff_gauss diff_gauss.cc)
 target_link_libraries(diff_gauss gpufilter)
 
+cuda_add_executable(usm usm.cc)
+target_link_libraries(usm gpufilter)
+
 include_directories(${OpenCV_DIR})
 
 
